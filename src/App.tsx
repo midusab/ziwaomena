@@ -514,7 +514,7 @@ export default function App() {
           >
             <div className="aspect-square relative overflow-hidden rounded-[48px] glass-card p-4 skew-y-1 rotate-1 group">
                <img 
-                src="https://picsum.photos/seed/lake-victoria-dish/800/800" 
+                src="https://images.pexels.com/photos/19227811/pexels-photo-19227811.jpeg" 
                 alt="Delicious Omena" 
                 className="w-full h-full object-cover rounded-[36px] transition-transform duration-700 group-hover:scale-110"
                 referrerPolicy="no-referrer"
