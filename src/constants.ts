@@ -115,7 +115,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Dunga Beach',
     experience: '32 Years',
     story: 'A third-generation fisherman who knows every current in the Winam Gulf. He prides himself on using sustainable nets that protect young fingerlings.',
-    image: 'https://picsum.photos/seed/lake-fisherman/600/800',
+    image: 'https://images.pexels.com/photos/34476774/pexels-photo-34476774.jpeg',
     impactScore: 98
   },
   {
@@ -124,7 +124,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Asat Beach',
     experience: '15 Years',
     story: 'Leading the first all-women sustainable fishing cooperative in Asat. She oversees the careful sun-drying process that gives our Omena its premium quality.',
-    image: 'https://picsum.photos/seed/dried-omena-mama/600/800',
+    image: 'https://images.pexels.com/photos/32943722/pexels-photo-32943722.jpeg',
     impactScore: 95
   },
   {
@@ -133,7 +133,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Mbita Point',
     experience: '22 Years',
     story: 'Specializes in deep-water harvesting during the dark moon cycles. His techniques minimize bycatch while ensuring the highest yield for the community.',
-    image: 'https://picsum.photos/seed/lake-victoria-boat/600/800',
+    image: 'https://images.pexels.com/photos/6952378/pexels-photo-6952378.jpeg',
     impactScore: 92
   }
 ];
