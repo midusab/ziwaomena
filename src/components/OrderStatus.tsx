@@ -12,6 +12,8 @@ interface OrderStatusProps {
 }
 
 const NAIROBI_CENTER: [number, number] = [-1.2921, 36.8219];
+// Mock destination for demo tracking
+const MOCK_DESTINATION: [number, number] = [-1.3000, 36.8300];
 
 const statusConfig = {
   'pending': {
@@ -45,20 +47,52 @@ const statusConfig = {
 };
 
 function RiderMap({ location }: { location?: { lat: number, lng: number } }) {
-  const center: [number, number] = location ? [location.lat, location.lng] : NAIROBI_CENTER;
+  const riderPos: [number, number] = location ? [location.lat, location.lng] : NAIROBI_CENTER;
   
   return (
-    <div className="h-48 w-full rounded-2xl overflow-hidden glass border border-white/20 mt-4 relative">
-      <Map height={200} defaultCenter={center} center={center} defaultZoom={14}>
+    <div className="h-64 w-full rounded-[32px] overflow-hidden glass border-2 border-white/20 mt-4 relative shadow-xl">
+      <Map 
+        height={256} 
+        defaultCenter={riderPos} 
+        center={riderPos} 
+        defaultZoom={13}
+      >
+        {/* Destination Marker */}
         <Marker 
           width={40} 
-          anchor={center} 
-          color="#a3e635"
+          anchor={MOCK_DESTINATION} 
+          color="#000000"
         />
+        {/* Rider Marker */}
+        <Marker 
+          width={45} 
+          anchor={riderPos} 
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-kfc-red rounded-full animate-ping opacity-25" />
+            <div className="w-10 h-10 bg-kfc-red rounded-2xl flex items-center justify-center text-white shadow-2xl rotate-45 border-2 border-white">
+               <Truck className="w-5 h-5 -rotate-45" />
+            </div>
+          </div>
+        </Marker>
       </Map>
-      <div className="absolute top-2 right-2 glass px-2 py-1 rounded-full text-[10px] font-bold text-kfc-black flex items-center gap-1">
-        <div className="w-1.5 h-1.5 bg-kfc-red rounded-full animate-pulse" />
-        Live Tracking
+      
+      <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
+        <div className="glass px-3 py-1.5 rounded-full text-[10px] font-bold text-kfc-black flex items-center gap-2 shadow-lg backdrop-blur-md border border-white/40">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="uppercase tracking-widest">Live Rider Tracking</span>
+        </div>
+        <div className="glass px-3 py-1.5 rounded-xl text-[10px] font-bold text-kfc-black flex flex-col items-end shadow-lg backdrop-blur-md border border-white/40">
+          <span className="opacity-40 uppercase tracking-tighter">Destination</span>
+          <span>Nairobi CBD Hub</span>
+        </div>
+      </div>
+      
+      <div className="absolute bottom-4 left-4 flex gap-2">
+         <div className="glass h-8 px-3 rounded-full flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-kfc-black/60 shadow-lg border border-white/40">
+            <div className="w-2 h-2 bg-black rounded-full" />
+            Home
+         </div>
       </div>
     </div>
   );

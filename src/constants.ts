@@ -1,4 +1,4 @@
-import { OmenaItem, Vendor } from './types';
+import { OmenaItem, Vendor, Fisherman } from './types';
 
 export const VENDORS: Vendor[] = [
   {
@@ -107,3 +107,33 @@ export const OMENA_ITEMS: OmenaItem[] = [
 ];
 
 export const CATEGORIES = ['All', 'Wet Fry', 'Deep Fried', 'Masala', 'Traditional', 'Breakfast', 'Fusion', 'Specialty'];
+
+export const FISHERMEN: Fisherman[] = [
+  {
+    id: 'f1',
+    name: 'Baba Otieno',
+    village: 'Dunga Beach',
+    experience: '32 Years',
+    story: 'A third-generation fisherman who knows every current in the Winam Gulf. He prides himself on using sustainable nets that protect young fingerlings.',
+    image: 'https://picsum.photos/seed/fisher1/600/800',
+    impactScore: 98
+  },
+  {
+    id: 'f2',
+    name: 'Mama Mercy',
+    village: 'Asat Beach',
+    experience: '15 Years',
+    story: 'Leading the first all-women sustainable fishing cooperative in Asat. She oversees the careful sun-drying process that gives our Omena its premium quality.',
+    image: 'https://picsum.photos/seed/fisher2/600/800',
+    impactScore: 95
+  },
+  {
+    id: 'f3',
+    name: 'Captain Joseph',
+    village: 'Mbita Point',
+    experience: '22 Years',
+    story: 'Specializes in deep-water harvesting during the dark moon cycles. His techniques minimize bycatch while ensuring the highest yield for the community.',
+    image: 'https://picsum.photos/seed/fisher3/600/800',
+    impactScore: 92
+  }
+];

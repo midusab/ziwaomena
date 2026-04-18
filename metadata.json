@@ -1,6 +1,6 @@
 {
-  "name": "ZiwaOmena Delivery",
-  "description": "Premium Omena delivery service featuring various traditional and modern Kenyan recipes, from deep-fried to rich wet-fries.",
+  "name": "OmenaExpress Delivery",
+  "description": "Kenya's first premium eco-conscious Omena delivery service. We blend lake heritage with modern sustainability to bring you fresh lakeside specialties.",
   "requestFramePermissions": [
     "geolocation"
   ],

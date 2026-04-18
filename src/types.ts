@@ -1,3 +1,13 @@
+export interface Fisherman {
+  id: string;
+  name: string;
+  village: string;
+  experience: string;
+  story: string;
+  image: string;
+  impactScore: number;
+}
+
 export interface Vendor {
   id: string;
   name: string;

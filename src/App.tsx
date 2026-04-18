@@ -10,6 +10,7 @@ import { OMENA_ITEMS, CATEGORIES, VENDORS } from './constants';
 import { CartItem, OmenaCategory, Vendor } from './types';
 import CookingAssistant from './components/CookingAssistant';
 import OrderStatus from './components/OrderStatus';
+import FishermenPage from './components/FishermenPage';
 import { auth, db } from './firebase';
 import axios from 'axios';
 import { 
@@ -56,6 +57,7 @@ export default function App() {
   const [promoInput, setPromoInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [showFishermen, setShowFishermen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -307,6 +309,12 @@ export default function App() {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
   };
+
+  if (showFishermen) {
+    return (
+      <FishermenPage onBack={() => setShowFishermen(false)} />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-kfc-cream selection:bg-kfc-red/30">
@@ -1096,7 +1104,17 @@ export default function App() {
             <h5 className="font-display text-xl mb-6 text-kfc-red">Ethos</h5>
             <ul className="space-y-4 text-kfc-white/60 text-sm font-light">
               <li><a href="#" className="hover:text-kfc-red transition-colors">Lake Conservation</a></li>
-              <li><a href="#" className="hover:text-kfc-red transition-colors">Our Fishermen</a></li>
+              <li>
+                <button 
+                  onClick={() => {
+                    setShowFishermen(true);
+                    window.scrollTo(0, 0);
+                  }} 
+                  className="hover:text-kfc-red transition-colors"
+                >
+                  Our Fishermen
+                </button>
+              </li>
               <li><a href="#" className="hover:text-kfc-red transition-colors">Zero-Waste Plastic</a></li>
               <li><a href="#" className="hover:text-kfc-red transition-colors">Sourcing Map</a></li>
             </ul>
