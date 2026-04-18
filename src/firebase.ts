@@ -1,15 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
-// Import the Firebase configuration
+// Import your Firebase config
 import firebaseConfig from '../firebase-applet-config.json';
 
-// Initialize Firebase SDK
+// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth(app);
 
+// Export Auth and Firestore (DEFAULT database)
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 // Validate Connection to Firestore
 async function testConnection() {
   try {
