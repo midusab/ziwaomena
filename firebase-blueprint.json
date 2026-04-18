@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information synchronized from Firebase Auth.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["displayName", "email", "role"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Order details for fish and local delicacies.",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "price": { "type": "number" },
+              "quantity": { "type": "number" }
+            }
+          }
+        },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "preparing", "out-for-delivery", "completed", "cancelled"] },
+        "paymentMethod": { "type": "string", "enum": ["mpesa", "stripe"] },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "deliveryAddress": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "totalPrice", "status", "paymentMethod", "uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Storage for user profile details."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Historical and active order records."
+    }
+  }
+}

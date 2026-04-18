@@ -1,0 +1,8 @@
+{
+  "name": "ZiwaOmena Delivery",
+  "description": "Premium Omena delivery service featuring various traditional and modern Kenyan recipes, from deep-fried to rich wet-fries.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}

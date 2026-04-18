@@ -1,0 +1,1124 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ShoppingCart, Plus, Minus, X, Fish, MapPin, Phone, ChefHat, Info, ShieldCheck, Truck, Star, LogIn, LogOut, User, Package, CreditCard, Wallet, ArrowRight, ArrowLeft, CheckCircle2, Search as SearchIcon } from 'lucide-react';
+import { OMENA_ITEMS, CATEGORIES, VENDORS } from './constants';
+import { CartItem, OmenaCategory, Vendor } from './types';
+import CookingAssistant from './components/CookingAssistant';
+import OrderStatus from './components/OrderStatus';
+import { auth, db } from './firebase';
+import axios from 'axios';
+import { 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  onAuthStateChanged, 
+  signOut,
+  User as FirebaseUser 
+} from 'firebase/auth';
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  doc, 
+  setDoc, 
+  getDoc 
+} from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from './lib/firebaseUtils';
+
+export default function App() {
+  const [selectedCategory, setSelectedCategory] = useState<OmenaCategory | 'All'>('All');
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [orderComplete, setOrderComplete] = useState(false);
+  const [cartStep, setCartStep] = useState<'review' | 'checkout'>('review');
+
+  // Auth state
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Form state
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'stripe'>('mpesa');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Promo code state
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      setIsAuthLoading(false);
+      
+      if (currentUser) {
+        // Clear errors on success
+        setAuthError(null);
+        // Sync user profile
+        const userRef = doc(db, 'users', currentUser.uid);
+        try {
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              displayName: currentUser.displayName,
+              email: currentUser.email,
+              photoURL: currentUser.photoURL,
+              role: 'user'
+            });
+          }
+        } catch (error) {
+          console.error("Profile sync error:", error);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    if (isSigningIn) return;
+    
+    setAuthError(null);
+    setIsSigningIn(true);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      
+      let message = "Failed to sign in. Please try again.";
+      if (error.code === 'auth/popup-blocked') {
+        message = "Popup blocked! Please allow popups for this site in your browser settings.";
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        message = "Sign-in request cancelled. Please try again.";
+      } else if (error.code === 'auth/internal-error') {
+        message = "Internal auth error. Please try again or check your internet connection.";
+      }
+      
+      setAuthError(message);
+      // Auto-clear error after 5s
+      setTimeout(() => setAuthError(null), 5000);
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const filteredItems = useMemo(() => {
+    let items = OMENA_ITEMS;
+    
+    if (selectedVendorId) {
+      items = items.filter(item => item.vendorId === selectedVendorId);
+    }
+    
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter(item => 
+        item.name.toLowerCase().includes(q) || 
+        item.description.toLowerCase().includes(q) ||
+        item.tags.some(tag => tag.toLowerCase().includes(q))
+      );
+    }
+
+    return selectedCategory === 'All' 
+      ? items 
+      : items.filter(item => item.category === selectedCategory);
+  }, [selectedCategory, selectedVendorId, searchQuery]);
+
+  const filteredVendors = useMemo(() => {
+    if (!searchQuery) return VENDORS;
+    const q = searchQuery.toLowerCase();
+    return VENDORS.filter(v => 
+      v.name.toLowerCase().includes(q) || 
+      v.description.toLowerCase().includes(q) ||
+      v.category.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const selectedVendor = useMemo(() => 
+    VENDORS.find(v => v.id === selectedVendorId), 
+  [selectedVendorId]);
+
+  const addToCart = (item: (typeof OMENA_ITEMS)[0]) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === item.id);
+      if (existing) {
+        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, { ...item, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === id);
+      if (existing && existing.quantity > 1) {
+        return prev.map(i => i.id === id ? { ...i, quantity: i.quantity - 1 } : i);
+      }
+      return prev.filter(i => i.id !== id);
+    });
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const discountAmount = useMemo(() => {
+    if (appliedPromo === 'LAKE20') {
+      return Math.floor(cartTotal * 0.2);
+    }
+    return 0;
+  }, [appliedPromo, cartTotal]);
+
+  const deliveryFee = useMemo(() => {
+    const uniqueVendorIds = new Set(cart.map(item => item.vendorId));
+    return Array.from(uniqueVendorIds).reduce((sum, id) => {
+      const vendor = VENDORS.find(v => v.id === id);
+      return sum + (vendor?.deliveryFee || 0);
+    }, 0);
+  }, [cart]);
+
+  const estimatedDeliveryTime = useMemo(() => {
+    if (cart.length === 0) return '0 min';
+    
+    const uniqueVendorIds = Array.from(new Set(cart.map(item => item.vendorId)));
+    const times = uniqueVendorIds.map(id => {
+      const vendor = VENDORS.find(v => v.id === id);
+      if (!vendor) return { min: 0, max: 0 };
+      const match = vendor.deliveryTime.match(/(\d+)-(\d+)/);
+      return match ? { min: parseInt(match[1]), max: parseInt(match[2]) } : { min: 0, max: 0 };
+    });
+
+    const maxMin = Math.max(...times.map(t => t.min));
+    const maxMax = Math.max(...times.map(t => t.max));
+
+    return `${maxMin}-${maxMax} mins`;
+  }, [cart]);
+
+  const handleApplyPromo = () => {
+    setPromoError(null);
+    if (promoInput.toUpperCase() === 'LAKE20') {
+      setAppliedPromo('LAKE20');
+      setPromoInput('');
+    } else {
+      setPromoError('Invalid promo code');
+    }
+  };
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      handleLogin();
+      return;
+    }
+
+    setIsOrdering(true);
+    setIsProcessingPayment(true);
+    const path = 'orders';
+    
+    try {
+      const orderAmount = cartTotal + deliveryFee - discountAmount;
+
+      // 1. Handle Payment via Backend
+      if (paymentMethod === 'mpesa') {
+        const mpesaRes = await axios.post('/api/mpesa/stkpush', {
+          phone,
+          amount: orderAmount,
+          userId: user.uid
+        });
+        console.log("M-Pesa Response:", mpesaRes.data);
+      } else {
+        const stripeRes = await axios.post('/api/create-payment-intent', {
+          amount: orderAmount
+        });
+        console.log("Stripe Client Secret Recieved:", stripeRes.data.clientSecret);
+      }
+
+      // 2. Save Order to Firestore
+      const docRef = await addDoc(collection(db, path), {
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        })),
+        totalPrice: orderAmount,
+        status: 'pending',
+        paymentMethod,
+        customerName: user.displayName || 'Anonymous',
+        customerPhone: phone,
+        deliveryAddress: address,
+        uid: user.uid,
+        createdAt: serverTimestamp()
+      });
+
+      // 3. Trigger Email via Backend (Resend)
+      try {
+        const emailRes = await axios.post('/api/send-order-email', {
+          email: user.email,
+          orderDetails: {
+            id: docRef.id.slice(-6),
+            total: orderAmount,
+            address
+          }
+        });
+        
+        if (emailRes.data.status === 'simulated') {
+          console.info("Email notification simulated (RESEND_API_KEY not set).");
+        } else {
+          console.log("Order confirmation email sent successfully.");
+        }
+      } catch (emailErr) {
+        console.warn("Email notification failed. Check server logs for details.");
+      }
+
+      setIsOrdering(false);
+      setIsProcessingPayment(false);
+      setOrderComplete(true);
+      setCart([]);
+      setAddress('');
+      setPhone('');
+      
+      setTimeout(() => {
+        setOrderComplete(false);
+        setIsCartOpen(false);
+      }, 3000);
+    } catch (error) {
+      setIsOrdering(false);
+      setIsProcessingPayment(false);
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-ziwa-mint selection:bg-ziwa-lime/30">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 glass border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-ziwa-green rounded-full flex items-center justify-center text-ziwa-mint shadow-lg">
+              <Fish className="w-6 h-6" />
+            </div>
+            <h1 className="text-2xl font-serif font-bold text-ziwa-green tracking-tight">ZiwaOmena</h1>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {isAuthLoading ? (
+              <div className="w-8 h-8 rounded-full bg-ziwa-lime/20 animate-pulse" />
+            ) : user ? (
+              <>
+                <button 
+                  onClick={() => setIsOrdersOpen(true)}
+                  className="p-2 hover:bg-white/40 rounded-full transition-colors group relative"
+                  title="Track Orders"
+                >
+                  <Package className="w-6 h-6 text-ziwa-green" />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-ziwa-lime rounded-full shadow-sm animate-pulse" />
+                </button>
+                <div className="flex items-center gap-2 pr-4 border-r border-ziwa-green/10 ml-2">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-[10px] uppercase font-bold text-ziwa-green opacity-60">Welcome back</p>
+                    <p className="text-xs font-medium text-ziwa-green">{user.displayName?.split(' ')[0]}</p>
+                  </div>
+                  <button onClick={handleLogout} title="Sign Out" className="group relative">
+                    <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border border-ziwa-green/20" />
+                    <div className="absolute inset-0 bg-ziwa-green/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <LogOut className="w-4 h-4 text-ziwa-mint" />
+                    </div>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                className="flex items-center gap-2 text-ziwa-green text-sm font-bold uppercase tracking-wider hover:bg-white/40 px-4 py-2 rounded-full transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </button>
+            )}
+
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 hover:bg-white/40 rounded-full transition-colors group"
+            >
+              <ShoppingCart className="w-6 h-6 text-ziwa-green" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-ziwa-lime text-ziwa-deep text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md animate-in fade-in zoom-in">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Search Header */}
+      <section className="pt-24 px-6 max-w-7xl mx-auto md:hidden">
+        <div className="relative group">
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ziwa-deep/40 group-focus-within:text-ziwa-emerald transition-colors" />
+          <input 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search cravings, vendors, dishes..." 
+            className="w-full pl-12 pr-4 py-4 glass rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-ziwa-emerald/20 transition-all border border-white/20"
+          />
+        </div>
+      </section>
+
+      {/* Promotion Slider */}
+      <section className="pt-10 px-6 max-w-7xl mx-auto overflow-hidden">
+        <div className="flex gap-6 overflow-x-auto pb-6 no-scrollbar snap-x">
+          <div className="min-w-[300px] md:min-w-[500px] aspect-[21/9] bg-gradient-to-br from-ziwa-green to-ziwa-forest rounded-[32px] p-8 flex items-center justify-between snap-center relative overflow-hidden group">
+            <div className="relative z-10">
+               <span className="px-3 py-1 bg-ziwa-lime text-ziwa-forest text-[10px] font-bold uppercase rounded-full mb-4 inline-block">Flash Deal</span>
+               <h4 className="text-ziwa-mint text-3xl font-serif">20% OFF <br/>First Order</h4>
+               <p className="text-ziwa-mint/60 text-xs mt-2 font-light">Use code: LAKE20 at checkout</p>
+            </div>
+            <Fish className="w-32 h-32 text-ziwa-lime opacity-10 absolute -right-4 -bottom-4 rotate-12 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="min-w-[300px] md:min-w-[500px] aspect-[21/9] bg-ziwa-lime/20 rounded-[32px] p-8 flex items-center justify-between snap-center relative overflow-hidden group border border-ziwa-lime/20">
+            <div className="relative z-10">
+               <span className="px-3 py-1 bg-ziwa-emerald text-ziwa-mint text-[10px] font-bold uppercase rounded-full mb-4 inline-block">Free Delivery</span>
+               <h4 className="text-ziwa-forest text-3xl font-serif">Zero Fees on <br/>Selected Hubs</h4>
+               <p className="text-ziwa-deep/40 text-xs mt-2 font-light">Valid for 3km radius from Kisumu CBD</p>
+            </div>
+            <Truck className="w-32 h-32 text-ziwa-emerald opacity-10 absolute -right-4 -bottom-4 -rotate-12 group-hover:scale-110 transition-transform" />
+          </div>
+        </div>
+      </section>
+
+      {/* Hero */}
+      <section className="pt-32 pb-10 px-6 max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ziwa-lime/20 text-ziwa-forest text-xs font-semibold uppercase tracking-wider mb-6">
+              <ChefHat className="w-3 h-3" />
+              Lake Victoria's Finest Greens
+            </div>
+            <h2 className="text-6xl md:text-8xl font-serif text-ziwa-green leading-[0.9] mb-8">
+              Fresh Omena <br />
+              <span className="italic">Grown in Nature.</span>
+            </h2>
+            <p className="text-ziwa-deep/70 text-lg max-w-lg mb-10 leading-relaxed font-light">
+              Premium, sustainable Omena from Lake Victoria. We combine tradition with 
+              modern lake-to-fork delivery, ensuring every bite is as fresh as the lake breeze.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <a href="#vendors" className="px-8 py-4 bg-ziwa-green text-ziwa-mint rounded-2xl font-medium hover:bg-ziwa-forest transition-all shadow-xl hover:-translate-y-1 text-center flex-1 md:flex-none">
+                Start Ordering
+              </a>
+              <div className="flex items-center gap-3 text-ziwa-emerald font-medium">
+                <span className="w-2 h-2 rounded-full bg-ziwa-emerald animate-pulse" />
+                Live delivery in Nairobi
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="relative hidden lg:block"
+          >
+            <div className="aspect-square relative overflow-hidden rounded-[48px] glass-card p-4 skew-y-1 rotate-1 group">
+               <img 
+                src="https://picsum.photos/seed/omenagreen/800/800" 
+                alt="Delicious Omena" 
+                className="w-full h-full object-cover rounded-[36px] transition-transform duration-700 group-hover:scale-110"
+                referrerPolicy="no-referrer"
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-ziwa-forest/40 to-transparent rounded-[36px]" />
+               <div className="absolute bottom-12 left-12 text-warm-bg">
+                  <p className="font-serif text-3xl italic">Lakeside Specialty</p>
+                  <p className="text-sm opacity-80">Fresh harvest, expertly prepared</p>
+               </div>
+            </div>
+            {/* Artistic Floating Element */}
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-ziwa-lime rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Vendors Section */}
+      {!selectedVendorId && (
+        <section id="vendors" className="py-20 px-6 max-w-7xl mx-auto">
+          <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h3 className="text-4xl font-serif text-ziwa-green mb-4">Top Rated Hubs</h3>
+              <p className="text-ziwa-deep/60 font-light max-w-md">Discover specialized lakeside kitchens near you.</p>
+            </div>
+            <div className="relative group hidden md:block w-full max-w-sm">
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ziwa-deep/40 group-focus-within:text-ziwa-emerald transition-colors" />
+              <input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search cravings, vendors..." 
+                className="w-full pl-12 pr-4 py-3 glass rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-ziwa-emerald/20 transition-all border border-white/20"
+              />
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredVendors.map((vendor, idx) => (
+              <motion.div
+                key={vendor.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                onClick={() => {
+                  setSelectedVendorId(vendor.id);
+                  const menuSection = document.getElementById('menu');
+                  menuSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="glass-card rounded-[40px] overflow-hidden group cursor-pointer hover:-translate-y-2 transition-all duration-300"
+              >
+                <div className="aspect-[16/9] relative overflow-hidden m-2 rounded-[32px]">
+                  <img 
+                    src={vendor.image} 
+                    alt={vendor.name} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full flex items-center gap-1">
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                    <span className="text-xs font-bold text-ziwa-forest">{vendor.rating}</span>
+                  </div>
+                  <div className="absolute bottom-4 left-4 glass px-3 py-1 rounded-full text-[10px] font-bold text-ziwa-forest uppercase">
+                    {vendor.category}
+                  </div>
+                </div>
+                <div className="p-8">
+                  <h4 className="text-2xl font-serif font-bold text-ziwa-green mb-2">{vendor.name}</h4>
+                  <p className="text-ziwa-deep/50 text-sm font-light leading-relaxed mb-6 line-clamp-2">
+                    {vendor.description}
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-ziwa-deep/40 uppercase tracking-widest pt-4 border-t border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-3 h-3" />
+                      {vendor.deliveryTime}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-3 h-3" />
+                      Ksh {vendor.deliveryFee}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Menu Section */}
+      <section id="menu" className="py-20 relative min-h-screen">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+            <div>
+              {selectedVendorId ? (
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-4"
+                >
+                  <button 
+                    onClick={() => setSelectedVendorId(null)}
+                    className="flex items-center gap-2 text-ziwa-emerald font-bold text-xs uppercase tracking-widest hover:translate-x-1 transition-transform"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to All Hubs
+                  </button>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden glass border-2 border-white">
+                      <img src={selectedVendor?.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    <div>
+                      <h3 className="text-4xl font-serif text-ziwa-green">{selectedVendor?.name}</h3>
+                      <p className="text-ziwa-deep/60 font-light flex items-center gap-4 mt-1">
+                        <span className="flex items-center gap-1 font-bold text-ziwa-forest"><Star className="w-3 h-3 text-amber-500 fill-amber-500" /> {selectedVendor?.rating}</span>
+                        <span>•</span>
+                        <span>{selectedVendor?.category}</span>
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <>
+                  <h3 className="text-4xl font-serif text-ziwa-green mb-4">Discover Flavors</h3>
+                  <p className="text-ziwa-deep/60 font-light max-w-md">
+                    Select a hub above or explore all Lakeside preparations below.
+                  </p>
+                </>
+              )}
+            </div>
+            
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-3 glass p-2 rounded-full">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat as any)}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                    selectedCategory === cat 
+                      ? 'bg-ziwa-green text-ziwa-mint shadow-lg' 
+                      : 'text-ziwa-deep hover:bg-white/40'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <AnimatePresence mode="popLayout">
+              {filteredItems.map((item, idx) => (
+                <motion.div
+                  layout
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="glass-card rounded-[40px] overflow-hidden group"
+                >
+                  <div className="aspect-[4/3] overflow-hidden relative m-2 rounded-[32px]">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute top-4 right-4 glass px-3 py-1 rounded-full text-xs font-bold text-ziwa-forest">
+                      Ksh {item.price}
+                    </div>
+                  </div>
+                  <div className="p-8">
+                    <div className="flex gap-2 mb-3">
+                      {item.tags.map(tag => (
+                        <span key={tag} className="text-[10px] uppercase tracking-widest font-bold text-ziwa-emerald">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <h4 className="text-2xl font-serif font-bold text-ziwa-green mb-3">
+                      {item.name}
+                    </h4>
+                    <p className="text-ziwa-deep/50 text-sm font-light leading-relaxed mb-8">
+                      {item.description}
+                    </p>
+                    <button 
+                      onClick={() => addToCart(item)}
+                      className="w-full py-4 bg-ziwa-emerald/10 text-ziwa-emerald font-semibold rounded-2xl hover:bg-ziwa-emerald hover:text-ziwa-mint transition-all flex items-center justify-center gap-2 group/btn"
+                    >
+                      <Plus className="w-4 h-4 group-hover/btn:rotate-90 transition-transform" />
+                      Add to Order
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+      </section>
+
+      {/* Cooking Assistant Section */}
+      <section className="py-32 px-6 max-w-7xl mx-auto">
+         <div className="text-center mb-16">
+            <h3 className="text-5xl font-serif text-ziwa-green mb-4">Lakeside Conversations</h3>
+            <p className="text-ziwa-deep/60 font-light max-w-xl mx-auto">
+              Meet our AI Lake Chef. Ask about specialized techniques, sustainable cleaning, or creative plating.
+            </p>
+         </div>
+         <div className="glass-card p-2 rounded-[48px]">
+            <CookingAssistant />
+         </div>
+      </section>
+
+      {/* Order Status Drawer */}
+      <AnimatePresence>
+        {isOrdersOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOrdersOpen(false)}
+              className="fixed inset-0 bg-ziwa-forest/20 backdrop-blur-sm z-[60]"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-4 top-4 bottom-4 w-full max-w-md glass rounded-[40px] z-[70] flex flex-col overflow-hidden"
+            >
+              <div className="p-8 border-b border-white/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-ziwa-green" />
+                  <h3 className="text-2xl font-serif text-ziwa-green uppercase tracking-tight">Order Tracking</h3>
+                </div>
+                <button onClick={() => setIsOrdersOpen(false)} className="p-2 hover:bg-white/40 rounded-full">
+                  <X className="w-6 h-6 text-stone-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8">
+                {user ? (
+                  <OrderStatus userId={user.uid} />
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-10">
+                    <LogIn className="w-16 h-16 text-ziwa-lime/40 mb-6" />
+                    <p className="font-serif text-2xl text-ziwa-deep/30 mb-2">Sign in to track orders</p>
+                    <button onClick={handleLogin} className="text-ziwa-emerald font-bold hover:underline">Click here to Login</button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Cart Drawer */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+              className="fixed inset-0 bg-ziwa-red/20 backdrop-blur-sm z-[60]"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-4 top-4 bottom-4 w-full max-w-md glass rounded-[40px] z-[70] flex flex-col overflow-hidden"
+            >
+              <div className="p-8 border-b border-white/20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {cartStep === 'checkout' && !orderComplete && (
+                    <button 
+                      onClick={() => setCartStep('review')}
+                      className="p-2 -ml-2 hover:bg-white/40 rounded-full transition-colors"
+                    >
+                      <ArrowLeft className="w-5 h-5 text-ziwa-green" />
+                    </button>
+                  )}
+                  <div className="bg-ziwa-green/10 p-2 rounded-xl">
+                    <ShoppingCart className="w-5 h-5 text-ziwa-green" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-serif text-ziwa-green leading-none">
+                      {orderComplete ? 'Success' : cartStep === 'review' ? 'Your Basket' : 'Checkout'}
+                    </h3>
+                    {!orderComplete && (
+                      <p className="text-[10px] uppercase font-bold text-ziwa-deep/30 tracking-widest mt-1">
+                        {cartCount} {cartCount === 1 ? 'Item' : 'Items'} • Lake Victoria Fresh
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    setTimeout(() => setCartStep('review'), 3000);
+                  }} 
+                  className="p-2 hover:bg-white/40 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-stone-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
+                {cart.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-12 bg-white/10 rounded-[48px] border-2 border-dashed border-white/20">
+                    <div className="relative mb-8">
+                      <Fish className="w-20 h-20 text-ziwa-lime/20 animate-pulse" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <ShoppingCart className="w-8 h-8 text-ziwa-green opacity-40" />
+                      </div>
+                    </div>
+                    <p className="font-serif text-3xl text-ziwa-green mb-3">Basket is empty</p>
+                    <p className="text-ziwa-deep/40 font-light text-sm max-w-[200px] leading-relaxed">
+                      Your journey to Lake Victoria's finest dishes starts with a click.
+                    </p>
+                    <button 
+                      onClick={() => setIsCartOpen(false)}
+                      className="mt-8 px-8 py-3 bg-ziwa-green/10 text-ziwa-green font-bold rounded-2xl hover:bg-ziwa-green hover:text-ziwa-mint transition-all"
+                    >
+                      Start Exploring
+                    </button>
+                  </div>
+                ) : cartStep === 'review' && !orderComplete ? (
+                  // Step 1: Review Items
+                  <div className="space-y-10">
+                    {/* Delivery Time Estimate Banner */}
+                    <div className="bg-ziwa-lime/10 border border-ziwa-lime/20 p-4 rounded-3xl flex items-center gap-4">
+                      <div className="w-10 h-10 bg-ziwa-lime/20 rounded-2xl flex items-center justify-center text-ziwa-forest shadow-sm">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                         <p className="text-xs font-bold text-ziwa-forest uppercase tracking-tight">
+                           {Array.from(new Set(cart.map(i => i.vendorId))).length > 1 ? 'Multi-Vendor Delivery' : 'Standard Delivery'}
+                         </p>
+                         <p className="text-[11px] text-ziwa-forest/60">Estimated arrival: <span className="font-bold text-ziwa-forest">{estimatedDeliveryTime}</span></p>
+                      </div>
+                    </div>
+
+                    {Object.entries(
+                      cart.reduce((groups, item) => {
+                        const vendorId = item.vendorId;
+                        if (!groups[vendorId]) groups[vendorId] = [];
+                        groups[vendorId].push(item);
+                        return groups;
+                      }, {} as Record<string, CartItem[]>)
+                    ).map(([vendorId, items]) => {
+                      const vendor = VENDORS.find(v => v.id === vendorId);
+                      return (
+                        <div key={vendorId} className="space-y-4">
+                          <div className="flex items-center justify-between px-2">
+                             <div className="flex items-center gap-2">
+                               <div className="w-6 h-6 rounded-lg overflow-hidden flex-shrink-0">
+                                 <img src={vendor?.image} alt="" className="w-full h-full object-cover" />
+                               </div>
+                               <span className="text-[10px] font-bold uppercase tracking-widest text-ziwa-deep/60">{vendor?.name}</span>
+                             </div>
+                             <span className="text-[9px] font-bold text-ziwa-emerald bg-ziwa-emerald/10 px-2 py-0.5 rounded-full uppercase">Vendor Match</span>
+                          </div>
+                          <div className="space-y-3">
+                            {items.map(item => (
+                              <motion.div 
+                                layout
+                                key={item.id} 
+                                className="flex gap-4 group bg-white/40 p-3 rounded-[2rem] border border-white/20 hover:border-ziwa-lime/30 transition-all shadow-sm hover:shadow-md relative overflow-hidden"
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-ziwa-lime/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 glass relative z-10">
+                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                                </div>
+                                <div className="flex-1 min-w-0 py-1 relative z-10">
+                                  <div className="flex justify-between items-start">
+                                    <h5 className="font-serif text-base text-ziwa-green leading-tight truncate pr-4">{item.name}</h5>
+                                    <p className="text-ziwa-deep font-bold text-xs">Ksh {item.price * item.quantity}</p>
+                                  </div>
+                                  <p className="text-[10px] text-ziwa-deep/30 font-light mt-1 truncate uppercase tracking-widest">{OMENA_ITEMS.find(oi => oi.id === item.id)?.category}</p>
+                                  <div className="flex items-center justify-between mt-3">
+                                    <div className="flex items-center bg-white border border-ziwa-green/10 rounded-full px-2 py-1 shadow-sm">
+                                      <button 
+                                        onClick={() => removeFromCart(item.id)} 
+                                        className="p-1 hover:text-ziwa-green transition-colors disabled:opacity-30"
+                                      >
+                                        <Minus className="w-3 h-3" />
+                                      </button>
+                                      <span className="w-8 text-center text-xs font-bold font-mono text-ziwa-green">{item.quantity}</span>
+                                      <button 
+                                        onClick={() => addToCart(item)} 
+                                        className="p-1 hover:text-ziwa-green transition-colors"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                    <button 
+                                      onClick={() => setCart(prev => prev.filter(i => i.id !== item.id))} 
+                                      className="text-ziwa-deep/10 hover:text-red-400 p-2 hover:bg-red-50 rounded-full transition-all"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : cartStep === 'checkout' && !orderComplete ? (
+                  // Step 2: Checkout Form
+                  <div className="space-y-8">
+                     <div className="space-y-2">
+                        <h4 className="text-xl font-serif text-ziwa-green">Delivery Details</h4>
+                        <p className="text-xs text-ziwa-deep/50 font-light">Where should we bring your lake feast?</p>
+                     </div>
+                     
+                     <div className="grid grid-cols-1 gap-4">
+                        <div className="relative group">
+                          <div className={`absolute left-4 top-4 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${address ? 'bg-ziwa-emerald/10 text-ziwa-emerald' : 'bg-white/40 text-ziwa-deep/20'}`}>
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <textarea 
+                            required 
+                            placeholder="Delivery Address (e.g. Milimani Rd, House 4B)" 
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            rows={3}
+                            className="w-full pl-16 pr-4 py-4 bg-white/40 border border-white/20 rounded-[2rem] text-sm focus:outline-none focus:ring-2 focus:ring-ziwa-green/20 shadow-sm placeholder:text-ziwa-deep/30 resize-none"
+                          />
+                        </div>
+
+                        <div className="relative group">
+                          <div className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${phone ? 'bg-ziwa-emerald/10 text-ziwa-emerald' : 'bg-white/40 text-ziwa-deep/20'}`}>
+                            <Phone className="w-5 h-5" />
+                          </div>
+                          <input 
+                            required 
+                            type="tel" 
+                            placeholder="M-Pesa Number (254...)" 
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="w-full pl-16 pr-4 h-16 bg-white/40 border border-white/20 rounded-[2rem] text-sm focus:outline-none focus:ring-2 focus:ring-ziwa-green/20 shadow-sm placeholder:text-ziwa-deep/30"
+                          />
+                        </div>
+                     </div>
+
+                     <div className="space-y-4">
+                        <div className="flex items-center justify-between px-2">
+                          <h4 className="text-[10px] uppercase font-bold tracking-widest text-ziwa-deep/40">Secure Payment</h4>
+                          <ShieldCheck className="w-3 h-3 text-ziwa-emerald" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod('mpesa')}
+                            className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border transition-all relative overflow-hidden group ${
+                              paymentMethod === 'mpesa' 
+                                ? 'bg-ziwa-lime/10 border-ziwa-lime/40 text-ziwa-forest shadow-md' 
+                                : 'bg-white/20 border-white/10 text-ziwa-deep/40 opacity-60'
+                            }`}
+                          >
+                            {paymentMethod === 'mpesa' && <motion.div layoutId="payment-indicator" className="absolute top-3 right-3 w-2 h-2 rounded-full bg-ziwa-lime shadow-[0_0_10px_rgba(180,255,0,0.5)]" />}
+                            <Wallet className={`w-6 h-6 ${paymentMethod === 'mpesa' ? 'text-ziwa-forest' : 'text-ziwa-deep/20'}`} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">M-Pesa STK</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod('stripe')}
+                            className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border transition-all relative overflow-hidden group ${
+                              paymentMethod === 'stripe' 
+                                ? 'bg-ziwa-lime/10 border-ziwa-lime/40 text-ziwa-forest shadow-md' 
+                                : 'bg-white/20 border-white/10 text-ziwa-deep/40 opacity-60'
+                            }`}
+                          >
+                            {paymentMethod === 'stripe' && <motion.div layoutId="payment-indicator" className="absolute top-3 right-3 w-2 h-2 rounded-full bg-ziwa-lime shadow-[0_0_10px_rgba(180,255,0,0.5)]" />}
+                            <CreditCard className={`w-6 h-6 ${paymentMethod === 'stripe' ? 'text-ziwa-forest' : 'text-ziwa-deep/20'}`} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Card / Stripe</span>
+                          </button>
+                        </div>
+                     </div>
+                  </div>
+                ) : orderComplete && (
+                  <div className="h-full flex items-center justify-center">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-ziwa-emerald text-ziwa-mint p-10 rounded-[4rem] text-center space-y-6 shadow-2xl relative overflow-hidden mx-4 w-full"
+                    >
+                      <div className="absolute top-0 right-0 p-12 opacity-10">
+                        <Package className="w-32 h-32" />
+                      </div>
+                      <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle2 className="w-12 h-12 text-white animate-in zoom-in duration-500" />
+                      </div>
+                      <div className="relative z-10">
+                        <h4 className="font-serif text-3xl mb-3">Order Confirmed!</h4>
+                        <p className="text-sm opacity-80 font-light leading-relaxed">
+                          Your lakeside feast is secured. Our chefs are firing up the pans for your order.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setOrderComplete(false);
+                          setIsCartOpen(false);
+                          setIsOrdersOpen(true);
+                          setCartStep('review');
+                        }}
+                        className="w-full py-5 bg-white text-ziwa-emerald font-bold rounded-2xl hover:bg-ziwa-mint transition-all flex items-center justify-center gap-3 group/track relative z-10 shadow-lg"
+                      >
+                        Track Order Live
+                        <ArrowRight className="w-5 h-5 group-hover/track:translate-x-1 transition-transform" />
+                      </button>
+                    </motion.div>
+                  </div>
+                )}
+              </div>
+
+              {cart.length > 0 && !orderComplete && (
+                <div className="p-8 glass shadow-[0_-20px_40px_rgba(0,0,0,0.05)] border-t border-white/20 rounded-t-[40px]">
+                  <div className="space-y-4 mb-8">
+                    {/* Totals Section */}
+                    {cartStep === 'review' && (
+                       <div className="bg-ziwa-green text-ziwa-mint rounded-[2.5rem] p-6 space-y-4 mb-6 relative overflow-hidden shadow-2xl">
+                          <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
+                             <ChefHat className="w-20 h-20" />
+                          </div>
+                          <div className="flex justify-between text-sm opacity-60 font-light">
+                            <span>Subtotal</span>
+                            <span className="font-mono">Ksh {cartTotal}</span>
+                          </div>
+                          <div className="flex justify-between text-sm opacity-60 font-light">
+                            <span className="flex items-center gap-2">
+                              Delivery
+                              {new Set(cart.map(i => i.vendorId)).size > 1 && (
+                                <span className="bg-white/10 text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">Multi-hub</span>
+                              )}
+                            </span>
+                            <span className="font-mono">Ksh {deliveryFee}</span>
+                          </div>
+                          {appliedPromo && (
+                             <div className="flex justify-between text-sm text-ziwa-lime font-bold">
+                               <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-ziwa-lime rounded-full animate-pulse" /> {appliedPromo} Applied</span>
+                               <span className="font-mono">- Ksh {discountAmount}</span>
+                             </div>
+                          )}
+                          <div className="h-px bg-white/10 my-2" />
+                          <div className="flex justify-between items-baseline">
+                             <p className="text-xs font-bold uppercase tracking-widest opacity-40">Grand Total</p>
+                             <p className="text-4xl font-serif">Ksh {Math.max(0, cartTotal + deliveryFee - discountAmount)}</p>
+                          </div>
+                       </div>
+                    )}
+
+                    {!orderComplete && cartStep === 'review' && (
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input 
+                            value={promoInput}
+                            onChange={(e) => setPromoInput(e.target.value)}
+                            placeholder="Promo Code"
+                            className="w-full h-12 glass rounded-2xl px-4 text-xs focus:outline-none focus:ring-2 focus:ring-ziwa-emerald/10 transition-all border border-white/20 placeholder:text-ziwa-deep/20"
+                          />
+                          {promoError && (
+                            <p className="absolute -bottom-5 left-2 text-[9px] text-red-500 font-bold">{promoError}</p>
+                          )}
+                        </div>
+                        <button 
+                          onClick={handleApplyPromo}
+                          className="px-6 h-12 bg-ziwa-deep/5 text-ziwa-deep text-xs font-bold rounded-2xl hover:bg-ziwa-deep hover:text-white transition-all border border-ziwa-deep/10"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-2">
+                       {cartStep === 'review' ? (
+                          <div className="flex flex-col">
+                             <p className="text-[10px] text-ziwa-deep/40 font-bold uppercase tracking-widest mb-1">Items to review</p>
+                             <p className="text-xl font-serif text-ziwa-green leading-none">{cartCount} Selected</p>
+                          </div>
+                       ) : (
+                          <div className="flex flex-col">
+                             <p className="text-[10px] text-ziwa-deep/40 font-bold uppercase tracking-widest mb-1">Final Amount</p>
+                             <p className="text-xl font-serif text-ziwa-green leading-none">Ksh {Math.max(0, cartTotal + deliveryFee - discountAmount)}</p>
+                          </div>
+                       )}
+                       
+                       {cartStep === 'review' ? (
+                          <button 
+                            onClick={() => setCartStep('checkout')}
+                            className="bg-ziwa-green text-ziwa-mint px-10 py-5 rounded-2xl font-bold flex items-center gap-3 shadow-2xl hover:bg-ziwa-forest transition-all hover:-translate-y-1 active:translate-y-0"
+                          >
+                            Go to Checkout
+                            <ArrowRight className="w-5 h-5" />
+                          </button>
+                       ) : (
+                          <button 
+                            onClick={handlePlaceOrder}
+                            disabled={isOrdering || isSigningIn || !address || !phone}
+                            className="bg-ziwa-green text-ziwa-mint px-10 py-5 rounded-2xl font-bold flex items-center gap-3 shadow-2xl hover:bg-ziwa-forest transition-all disabled:opacity-50 hover:-translate-y-1 active:translate-y-0"
+                          >
+                            {isOrdering ? (
+                              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="flex items-center gap-2">
+                                <ChefHat className="w-5 h-5" />
+                                <span>Placing Order...</span>
+                              </motion.div>
+                            ) : (
+                              <>Confirm & Pay Now</>
+                            )}
+                          </button>
+                       )}
+                    </div>
+                  </div>
+
+                  {cartStep === 'checkout' && (
+                    <div className="flex items-center gap-2 text-[9px] text-ziwa-deep/30 font-bold uppercase tracking-widest px-2">
+                       <ShieldCheck className="w-3 h-3 text-ziwa-emerald" />
+                       Secure {paymentMethod.toUpperCase()} Checkout
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Footer */}
+      <footer className="bg-ziwa-forest py-20 px-6 text-ziwa-mint relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(163,230,53,0.1),transparent_50%)]" />
+        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12 relative z-10">
+          <div className="col-span-2">
+            <div className="flex items-center gap-2 mb-6 text-ziwa-lime">
+              <Fish className="w-8 h-8" />
+              <h2 className="text-4xl font-serif">ZiwaOmena</h2>
+            </div>
+            <p className="text-ziwa-mint/60 max-w-sm font-light leading-relaxed">
+              Kenya's first premium eco-conscious Omena delivery service. 
+              We blend lake heritage with modern sustainability to bring you fish that feels good.
+            </p>
+          </div>
+          <div>
+            <h5 className="font-serif text-xl mb-6 text-ziwa-lime">Ethos</h5>
+            <ul className="space-y-4 text-ziwa-mint/60 text-sm font-light">
+              <li><a href="#" className="hover:text-ziwa-lime transition-colors">Lake Conservation</a></li>
+              <li><a href="#" className="hover:text-ziwa-lime transition-colors">Our Fishermen</a></li>
+              <li><a href="#" className="hover:text-ziwa-lime transition-colors">Zero-Waste Plastic</a></li>
+              <li><a href="#" className="hover:text-ziwa-lime transition-colors">Sourcing Map</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="font-serif text-xl mb-6 text-ziwa-lime">Lake Hub</h5>
+            <div className="space-y-4 text-ziwa-mint/60 text-sm font-light">
+              <p>Lake Region, Kisumu</p>
+              <p>+254 700 000 000</p>
+              <p>nature@ziwaomena.com</p>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto pt-20 mt-20 border-t border-ziwa-mint/10 flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
+          <p className="text-xs text-ziwa-mint/40">© 2024 ZiwaOmena Nature Delivery. LAKE TO FORK.</p>
+          <div className="flex gap-8 text-xs text-ziwa-mint/40">
+            <a href="#" className="hover:text-ziwa-mint transition-colors">Safety Records</a>
+            <a href="#" className="hover:text-ziwa-mint transition-colors">Carbon Report</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
