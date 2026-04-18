@@ -5,7 +5,7 @@ export const VENDORS: Vendor[] = [
     id: 'v1',
     name: 'Ziwa Omena House',
     description: 'The authentic taste of Lake Victoria. Specializing in traditional recipes.',
-    image: 'https://picsum.photos/seed/lakeside-restaurant/600/400',
+    image: 'https://images.pexels.com/photos/18606632/pexels-photo-18606632.jpeg',
     rating: 4.8,
     deliveryTime: '25-35 min',
     deliveryFee: 150,
@@ -15,7 +15,7 @@ export const VENDORS: Vendor[] = [
     id: 'v2',
     name: 'Pishori & Omena Junction',
     description: 'Modern fusion kitchen blending coastal rice with lakeside delicacy.',
-    image: 'https://picsum.photos/seed/kenyan-kitchen/600/400',
+    image: 'https://images.pexels.com/photos/7795318/pexels-photo-7795318.jpeg',
     rating: 4.5,
     deliveryTime: '30-45 min',
     deliveryFee: 120,
@@ -25,7 +25,7 @@ export const VENDORS: Vendor[] = [
     id: 'v3',
     name: 'Dala Delicacies',
     description: 'Premium quality sun-dried and smoked Omena sourced directly from Winam Gulf.',
-    image: 'https://picsum.photos/seed/omena-market/600/400',
+    image: 'https://images.pexels.com/photos/2792153/pexels-photo-2792153.jpeg',
     rating: 4.9,
     deliveryTime: '20-30 min',
     deliveryFee: 180,
@@ -41,7 +41,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Perfectly crunchy deep-fried Omena, seasoned with Kenyan salt and a hint of lemon. Best served with ugali.',
     price: 350,
     category: 'Deep Fried',
-    image: 'https://picsum.photos/seed/fried-omena/600/400',
+    image: 'https://images.pexels.com/photos/8250326/pexels-photo-8250326.jpeg',
     tags: ['Crunchy', 'Traditional']
   },
   {
@@ -51,7 +51,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Tender Omena simmered in a rich tomato, onion, and fresh coriander gravy. The ultimate kenyian comfort food.',
     price: 450,
     category: 'Wet Fry',
-    image: 'https://picsum.photos/seed/wetfry-omena/600/400',
+    image: 'https://images.pexels.com/photos/19141512/pexels-photo-19141512.jpeg',
     tags: ['Hearty', 'Spicy']
   },
   {
@@ -61,7 +61,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'A fusion twist! Omena tossed in aromatic masala spices, ginger, and garlic. A bold flavor experience.',
     price: 500,
     category: 'Masala',
-    image: 'https://picsum.photos/seed/spicy-omena/600/400',
+    image: 'https://images.pexels.com/photos/16121287/pexels-photo-16121287.jpeg',
     tags: ['Spicy', 'Fusion']
   },
   {
@@ -71,7 +71,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Omena cooked with traditional bitter greens (Managu/Suna) and cream. Authentic lakeside recipe.',
     price: 550,
     category: 'Traditional',
-    image: 'https://picsum.photos/seed/lake-vegetables/600/400',
+    image: 'https://images.pexels.com/photos/30946367/pexels-photo-30946367.jpeg',
     tags: ['Nutritious', 'Lakeside']
   },
   {
@@ -81,7 +81,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Infused with roasted garlic and fresh butter, a modern take on the classic Omena.',
     price: 480,
     category: 'Specialty',
-    image: 'https://picsum.photos/seed/garlic-fish/600/400',
+    image: 'https://images.pexels.com/photos/37065732/pexels-photo-37065732.jpeg',
     tags: ['Modern', 'Garlicky']
   },
   {
@@ -91,7 +91,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Smoked Omena served with roasted sweet potatoes and local ginger tea. A hearty Kisumu morning.',
     price: 650,
     category: 'Breakfast',
-    image: 'https://picsum.photos/seed/ominabreakfast/600/400',
+    image: 'https://images.pexels.com/photos/19227811/pexels-photo-19227811.jpeg',
     tags: ['Traditional', 'Full Meal']
   },
   {
@@ -101,7 +101,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Thin crust pizza topped with deep-fried Omena, green olives, and fresh dhania.',
     price: 950,
     category: 'Fusion',
-    image: 'https://picsum.photos/seed/ominapizza/600/400',
+    image: 'https://images.pexels.com/photos/33592993/pexels-photo-33592993.jpeg',
     tags: ['Modern', 'Lakeside']
   }
 ];
@@ -115,7 +115,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Dunga Beach',
     experience: '32 Years',
     story: 'A third-generation fisherman who knows every current in the Winam Gulf. He prides himself on using sustainable nets that protect young fingerlings.',
-    image: 'https://picsum.photos/seed/lake-fisherman/600/800',
+    image: 'https://images.pexels.com/photos/15858598/pexels-photo-15858598.jpeg',
     impactScore: 98
   },
   {
@@ -124,7 +124,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Asat Beach',
     experience: '15 Years',
     story: 'Leading the first all-women sustainable fishing cooperative in Asat. She oversees the careful sun-drying process that gives our Omena its premium quality.',
-    image: 'https://picsum.photos/seed/dried-omena-mama/600/800',
+    image: 'https://images.pexels.com/photos/32943724/pexels-photo-32943724.jpeg',
     impactScore: 95
   },
   {
@@ -133,7 +133,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Mbita Point',
     experience: '22 Years',
     story: 'Specializes in deep-water harvesting during the dark moon cycles. His techniques minimize bycatch while ensuring the highest yield for the community.',
-    image: 'https://picsum.photos/seed/lake-victoria-boat/600/800',
+    image: 'https://images.pexels.com/photos/29827382/pexels-photo-29827382.jpeg',
     impactScore: 92
   }
 ];
