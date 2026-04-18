@@ -81,7 +81,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Infused with roasted garlic and fresh butter, a modern take on the classic Omena.',
     price: 480,
     category: 'Specialty',
-    image: 'https://picsum.photos/seed/garlic-fish/600/400',
+    image: 'https://images.pexels.com/photos/34038236/pexels-photo-34038236.jpeg',
     tags: ['Modern', 'Garlicky']
   },
   {
@@ -91,7 +91,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Smoked Omena served with roasted sweet potatoes and local ginger tea. A hearty Kisumu morning.',
     price: 650,
     category: 'Breakfast',
-    image: 'https://picsum.photos/seed/ominabreakfast/600/400',
+    image: 'https://images.pexels.com/photos/11692932/pexels-photo-11692932.jpeg',
     tags: ['Traditional', 'Full Meal']
   },
   {
@@ -101,7 +101,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Thin crust pizza topped with deep-fried Omena, green olives, and fresh dhania.',
     price: 950,
     category: 'Fusion',
-    image: 'https://picsum.photos/seed/ominapizza/600/400',
+    image: 'https://images.pexels.com/photos/33592993/pexels-photo-33592993.jpeg',
     tags: ['Modern', 'Lakeside']
   }
 ];
