@@ -39,13 +39,13 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-warm-bg p-6 text-center">
-          <div className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl border border-ziwa-red/10">
-            <h2 className="text-3xl font-serif text-ziwa-red mb-4">Mambo Siyo Safi!</h2>
-            <p className="text-stone-500 font-light mb-8">{errorMessage}</p>
+        <div className="min-h-screen flex items-center justify-center bg-kfc-cream p-6 text-center">
+          <div className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl border border-kfc-red/5">
+            <h2 className="text-3xl font-display text-kfc-red mb-4 uppercase tracking-tighter">Mambo Siyo Safi!</h2>
+            <p className="text-kfc-gray font-light mb-8">{errorMessage}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="px-8 py-3 bg-ziwa-red text-warm-bg rounded-full font-bold hover:bg-ziwa-red/90 transition-all"
+              className="px-8 py-3 bg-kfc-red text-kfc-white rounded-full font-bold hover:bg-kfc-black transition-all shadow-lg uppercase tracking-widest text-xs"
             >
               Try Again
             </button>
