@@ -5,7 +5,7 @@ export const VENDORS: Vendor[] = [
     id: 'v1',
     name: 'Ziwa Omena House',
     description: 'The authentic taste of Lake Victoria. Specializing in traditional recipes.',
-    image: 'https://picsum.photos/seed/lakeside-restaurant/600/400',
+    image: 'https://images.pexels.com/photos/15376201/pexels-photo-15376201.jpeg',
     rating: 4.8,
     deliveryTime: '25-35 min',
     deliveryFee: 150,
@@ -15,7 +15,7 @@ export const VENDORS: Vendor[] = [
     id: 'v2',
     name: 'Pishori & Omena Junction',
     description: 'Modern fusion kitchen blending coastal rice with lakeside delicacy.',
-    image: 'https://picsum.photos/seed/kenyan-kitchen/600/400',
+    image: 'https://images.pexels.com/photos/19227811/pexels-photo-19227811.jpeg',
     rating: 4.5,
     deliveryTime: '30-45 min',
     deliveryFee: 120,
@@ -25,7 +25,7 @@ export const VENDORS: Vendor[] = [
     id: 'v3',
     name: 'Dala Delicacies',
     description: 'Premium quality sun-dried and smoked Omena sourced directly from Winam Gulf.',
-    image: 'https://picsum.photos/seed/omena-market/600/400',
+    image: 'https://images.pexels.com/photos/5535020/pexels-photo-5535020.jpeg',
     rating: 4.9,
     deliveryTime: '20-30 min',
     deliveryFee: 180,
@@ -41,7 +41,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Perfectly crunchy deep-fried Omena, seasoned with Kenyan salt and a hint of lemon. Best served with ugali.',
     price: 350,
     category: 'Deep Fried',
-    image: 'https://picsum.photos/seed/fried-omena/600/400',
+    image: 'https://images.pexels.com/photos/8250421/pexels-photo-8250421.jpeg',
     tags: ['Crunchy', 'Traditional']
   },
   {
@@ -51,7 +51,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Tender Omena simmered in a rich tomato, onion, and fresh coriander gravy. The ultimate kenyian comfort food.',
     price: 450,
     category: 'Wet Fry',
-    image: 'https://picsum.photos/seed/wetfry-omena/600/400',
+    image: 'https://images.pexels.com/photos/19141512/pexels-photo-19141512.jpeg',
     tags: ['Hearty', 'Spicy']
   },
   {
@@ -61,7 +61,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'A fusion twist! Omena tossed in aromatic masala spices, ginger, and garlic. A bold flavor experience.',
     price: 500,
     category: 'Masala',
-    image: 'https://picsum.photos/seed/spicy-omena/600/400',
+    image: 'https://images.pexels.com/photos/30946367/pexels-photo-30946367.jpeg',
     tags: ['Spicy', 'Fusion']
   },
   {
@@ -71,7 +71,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Omena cooked with traditional bitter greens (Managu/Suna) and cream. Authentic lakeside recipe.',
     price: 550,
     category: 'Traditional',
-    image: 'https://picsum.photos/seed/lake-vegetables/600/400',
+    image: 'https://images.pexels.com/photos/36832375/pexels-photo-36832375.jpeg',
     tags: ['Nutritious', 'Lakeside']
   },
   {
