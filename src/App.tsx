@@ -42,6 +42,8 @@ export default function App() {
   const [isOrdering, setIsOrdering] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [cartStep, setCartStep] = useState<'review' | 'checkout'>('review');
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(2000);
 
   // Auth state
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -145,14 +147,17 @@ export default function App() {
       items = items.filter(item => 
         item.name.toLowerCase().includes(q) || 
         item.description.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
         item.tags.some(tag => tag.toLowerCase().includes(q))
       );
     }
 
-    return selectedCategory === 'All' 
-      ? items 
-      : items.filter(item => item.category === selectedCategory);
-  }, [selectedCategory, selectedVendorId, searchQuery]);
+    if (selectedCategory !== 'All') {
+      items = items.filter(item => item.category === selectedCategory);
+    }
+
+    return items.filter(item => item.price >= minPrice && item.price <= maxPrice);
+  }, [selectedCategory, selectedVendorId, searchQuery, minPrice, maxPrice]);
 
   const filteredVendors = useMemo(() => {
     if (!searchQuery) return VENDORS;
@@ -567,8 +572,8 @@ export default function App() {
       {/* Menu Section */}
       <section id="menu" className="py-20 relative min-h-screen">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-            <div>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12 mb-16">
+            <div className="flex-1">
               {selectedVendorId ? (
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }}
@@ -583,44 +588,82 @@ export default function App() {
                     Back to All Hubs
                   </button>
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden glass border-2 border-white">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden glass border-2 border-white/40 shadow-xl">
                       <img src={selectedVendor?.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                     <div>
-                      <h3 className="text-4xl font-display text-kfc-black">{selectedVendor?.name}</h3>
-                      <p className="text-kfc-black/60 font-light flex items-center gap-4 mt-1">
-                        <span className="flex items-center gap-1 font-bold text-kfc-black"><Star className="w-3 h-3 text-amber-500 fill-amber-500" /> {selectedVendor?.rating}</span>
-                        <span>•</span>
-                        <span>{selectedVendor?.category}</span>
+                      <h3 className="text-4xl font-display text-kfc-black leading-tight">{selectedVendor?.name}</h3>
+                      <p className="text-kfc-black/60 font-light flex items-center gap-4 mt-2 text-sm uppercase tracking-wider">
+                        <span className="flex items-center gap-1.5 font-bold text-kfc-black">
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> {selectedVendor?.rating}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-black/10" />
+                        <span>{selectedVendor?.category} Specialist</span>
                       </p>
                     </div>
                   </div>
                 </motion.div>
               ) : (
                 <>
-                  <h3 className="text-4xl font-display text-kfc-black mb-4">Discover Flavors</h3>
-                  <p className="text-kfc-black/60 font-light max-w-md">
-                    Select a hub above or explore all Lakeside preparations below.
+                  <h3 className="text-5xl font-display text-kfc-black mb-4">Lakeside Harvest</h3>
+                  <p className="text-kfc-black/60 font-light max-w-md leading-relaxed">
+                    Custom-curated menu featuring premium catches and specialized preparations refined over generations.
                   </p>
                 </>
               )}
             </div>
             
-            {/* Category Filter */}
-            <div className="flex flex-wrap gap-3 glass p-2 rounded-full">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat as any)}
-                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                    selectedCategory === cat 
-                      ? 'bg-kfc-red text-kfc-white shadow-lg' 
-                      : 'text-kfc-black hover:bg-white/40'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="flex flex-col gap-6 lg:items-end w-full lg:w-auto">
+               {/* Search, Category and Price Filters Area */}
+               <div className="flex flex-wrap items-center gap-6">
+                  {/* Category Filter */}
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-kfc-black/40 px-2 lg:text-right">Specialty Filter</p>
+                    <div className="flex flex-wrap gap-2 glass p-1.5 rounded-2xl border border-white/20">
+                      {CATEGORIES.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat as any)}
+                          className={`px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${
+                            selectedCategory === cat 
+                              ? 'bg-kfc-red text-kfc-white shadow-lg' 
+                              : 'text-kfc-black/60 hover:bg-white/40 hover:text-kfc-black'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Price Range */}
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-kfc-black/40 px-2 lg:text-right">Price Ceiling</p>
+                    <div className="flex items-center gap-4 glass px-4 py-2 rounded-2xl border border-white/20">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-kfc-black/30">Ksh</span>
+                        <input 
+                          type="number" 
+                          value={maxPrice}
+                          onChange={(e) => setMaxPrice(Number(e.target.value))}
+                          className="w-16 bg-transparent text-sm font-bold text-kfc-red focus:outline-none focus:ring-0 appearance-none m-0"
+                          min={0}
+                        />
+                      </div>
+                      <div className="h-4 w-px bg-black/5" />
+                      <button 
+                        onClick={() => {
+                          setMinPrice(0);
+                          setMaxPrice(2000);
+                          setSelectedCategory('All');
+                        }}
+                        className="text-[10px] font-black uppercase tracking-widest text-kfc-red hover:text-kfc-black transition-colors"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+               </div>
             </div>
           </div>
 
