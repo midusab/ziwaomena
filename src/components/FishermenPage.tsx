@@ -152,7 +152,7 @@ export default function FishermenPage({ onBack }: FishermenPageProps) {
            <div className="relative">
               <div className="aspect-square rounded-[60px] overflow-hidden shadow-2xl skew-y-1">
                  <img 
-                    src="https://picsum.photos/seed/lakevictoria/800/800" 
+                    src="https://picsum.photos/seed/lake-victoria-sunrise/800/800" 
                     alt="Lake Victoria Sunrise" 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer"

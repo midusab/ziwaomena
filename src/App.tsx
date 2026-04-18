@@ -11,6 +11,7 @@ import { CartItem, OmenaCategory, Vendor } from './types';
 import CookingAssistant from './components/CookingAssistant';
 import OrderStatus from './components/OrderStatus';
 import FishermenPage from './components/FishermenPage';
+import ProfileView from './components/ProfileView';
 import { auth, db } from './firebase';
 import axios from 'axios';
 import { 
@@ -37,6 +38,7 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isOrdering, setIsOrdering] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [cartStep, setCartStep] = useState<'review' | 'checkout'>('review');
@@ -76,8 +78,14 @@ export default function App() {
               displayName: currentUser.displayName,
               email: currentUser.email,
               photoURL: currentUser.photoURL,
-              role: 'user'
+              role: 'user',
+              createdAt: serverTimestamp()
             });
+          } else {
+            // Load address and phone if they exist
+            const data = userSnap.data();
+            if (data.address) setAddress(data.address);
+            if (data.phone) setPhone(data.phone);
           }
         } catch (error) {
           console.error("Profile sync error:", error);
@@ -346,10 +354,10 @@ export default function App() {
                     <p className="text-[10px] uppercase font-bold text-kfc-red opacity-60">Welcome back</p>
                     <p className="text-xs font-medium text-kfc-red">{user.displayName?.split(' ')[0]}</p>
                   </div>
-                  <button onClick={handleLogout} title="Sign Out" className="group relative">
-                    <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border border-kfc-red/20" />
-                    <div className="absolute inset-0 bg-kfc-red/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <LogOut className="w-4 h-4 text-kfc-white" />
+                  <button onClick={() => setIsProfileOpen(true)} title="Profile Hub" className="group relative">
+                    <img src={user.photoURL || ''} alt="" className="w-8 h-8 rounded-full border border-kfc-red/20 group-hover:border-kfc-red transition-colors" />
+                    <div className="absolute inset-0 bg-kfc-red/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <User className="w-4 h-4 text-kfc-red" />
                     </div>
                   </button>
                 </div>
@@ -453,7 +461,7 @@ export default function App() {
           >
             <div className="aspect-square relative overflow-hidden rounded-[48px] glass-card p-4 skew-y-1 rotate-1 group">
                <img 
-                src="https://picsum.photos/seed/omenagreen/800/800" 
+                src="https://picsum.photos/seed/lake-victoria-dish/800/800" 
                 alt="Delicious Omena" 
                 className="w-full h-full object-cover rounded-[36px] transition-transform duration-700 group-hover:scale-110"
                 referrerPolicy="no-referrer"
@@ -1136,6 +1144,49 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      <AnimatePresence>
+        {isProfileOpen && user && (
+          <div className="fixed inset-0 z-[100] flex justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsProfileOpen(false)}
+              className="absolute inset-0 bg-kfc-black/40 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-kfc-cream shadow-2xl flex flex-col h-full"
+            >
+              <button 
+                onClick={() => setIsProfileOpen(false)}
+                className="absolute top-6 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border border-black/5 hover:bg-kfc-red hover:text-kfc-white transition-all z-20 group"
+              >
+                <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              </button>
+              
+              <ProfileView user={user} onClose={() => setIsProfileOpen(false)} />
+
+              <div className="p-8 border-t border-black/5 bg-white/50">
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsProfileOpen(false);
+                  }}
+                  className="w-full py-4 text-kfc-red font-bold flex items-center justify-center gap-2 hover:bg-kfc-red/5 rounded-2xl transition-all uppercase tracking-widest text-xs"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out of Hub
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

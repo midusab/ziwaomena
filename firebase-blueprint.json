@@ -8,7 +8,10 @@
         "displayName": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "photoURL": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "admin"] }
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["displayName", "email", "role"]
     },

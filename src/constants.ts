@@ -5,7 +5,7 @@ export const VENDORS: Vendor[] = [
     id: 'v1',
     name: 'Ziwa Omena House',
     description: 'The authentic taste of Lake Victoria. Specializing in traditional recipes.',
-    image: 'https://picsum.photos/seed/vendor1/600/400',
+    image: 'https://picsum.photos/seed/lakeside-restaurant/600/400',
     rating: 4.8,
     deliveryTime: '25-35 min',
     deliveryFee: 150,
@@ -15,7 +15,7 @@ export const VENDORS: Vendor[] = [
     id: 'v2',
     name: 'Pishori & Omena Junction',
     description: 'Modern fusion kitchen blending coastal rice with lakeside delicacy.',
-    image: 'https://picsum.photos/seed/vendor2/600/400',
+    image: 'https://picsum.photos/seed/kenyan-kitchen/600/400',
     rating: 4.5,
     deliveryTime: '30-45 min',
     deliveryFee: 120,
@@ -25,7 +25,7 @@ export const VENDORS: Vendor[] = [
     id: 'v3',
     name: 'Dala Delicacies',
     description: 'Premium quality sun-dried and smoked Omena sourced directly from Winam Gulf.',
-    image: 'https://picsum.photos/seed/vendor3/600/400',
+    image: 'https://picsum.photos/seed/omena-market/600/400',
     rating: 4.9,
     deliveryTime: '20-30 min',
     deliveryFee: 180,
@@ -41,7 +41,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Perfectly crunchy deep-fried Omena, seasoned with Kenyan salt and a hint of lemon. Best served with ugali.',
     price: 350,
     category: 'Deep Fried',
-    image: 'https://picsum.photos/seed/omina1/600/400',
+    image: 'https://picsum.photos/seed/fried-omena/600/400',
     tags: ['Crunchy', 'Traditional']
   },
   {
@@ -51,7 +51,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Tender Omena simmered in a rich tomato, onion, and fresh coriander gravy. The ultimate kenyian comfort food.',
     price: 450,
     category: 'Wet Fry',
-    image: 'https://picsum.photos/seed/omina2/600/400',
+    image: 'https://picsum.photos/seed/wetfry-omena/600/400',
     tags: ['Hearty', 'Spicy']
   },
   {
@@ -61,7 +61,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'A fusion twist! Omena tossed in aromatic masala spices, ginger, and garlic. A bold flavor experience.',
     price: 500,
     category: 'Masala',
-    image: 'https://picsum.photos/seed/omina3/600/400',
+    image: 'https://picsum.photos/seed/spicy-omena/600/400',
     tags: ['Spicy', 'Fusion']
   },
   {
@@ -71,7 +71,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Omena cooked with traditional bitter greens (Managu/Suna) and cream. Authentic lakeside recipe.',
     price: 550,
     category: 'Traditional',
-    image: 'https://picsum.photos/seed/omina4/600/400',
+    image: 'https://picsum.photos/seed/lake-vegetables/600/400',
     tags: ['Nutritious', 'Lakeside']
   },
   {
@@ -81,7 +81,7 @@ export const OMENA_ITEMS: OmenaItem[] = [
     description: 'Infused with roasted garlic and fresh butter, a modern take on the classic Omena.',
     price: 480,
     category: 'Specialty',
-    image: 'https://picsum.photos/seed/omina5/600/400',
+    image: 'https://picsum.photos/seed/garlic-fish/600/400',
     tags: ['Modern', 'Garlicky']
   },
   {
@@ -115,7 +115,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Dunga Beach',
     experience: '32 Years',
     story: 'A third-generation fisherman who knows every current in the Winam Gulf. He prides himself on using sustainable nets that protect young fingerlings.',
-    image: 'https://picsum.photos/seed/fisher1/600/800',
+    image: 'https://picsum.photos/seed/lake-fisherman/600/800',
     impactScore: 98
   },
   {
@@ -124,7 +124,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Asat Beach',
     experience: '15 Years',
     story: 'Leading the first all-women sustainable fishing cooperative in Asat. She oversees the careful sun-drying process that gives our Omena its premium quality.',
-    image: 'https://picsum.photos/seed/fisher2/600/800',
+    image: 'https://picsum.photos/seed/dried-omena-mama/600/800',
     impactScore: 95
   },
   {
@@ -133,7 +133,7 @@ export const FISHERMEN: Fisherman[] = [
     village: 'Mbita Point',
     experience: '22 Years',
     story: 'Specializes in deep-water harvesting during the dark moon cycles. His techniques minimize bycatch while ensuring the highest yield for the community.',
-    image: 'https://picsum.photos/seed/fisher3/600/800',
+    image: 'https://picsum.photos/seed/lake-victoria-boat/600/800',
     impactScore: 92
   }
 ];
