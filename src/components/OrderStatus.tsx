@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Truck, CheckCircle2, Clock, MapPin, Search, ChevronRight, Navigation } from 'lucide-react';
-import { Order } from '../types';
+import { Package, Truck, CheckCircle2, Clock, MapPin, Search, ChevronRight, Navigation, RefreshCcw } from 'lucide-react';
+import { Order, CartItem } from '../types';
 import { handleFirestoreError, OperationType } from '../lib/firebaseUtils';
 import { Map, Marker } from 'pigeon-maps';
 
 interface OrderStatusProps {
   userId: string;
+  onReorder: (items: CartItem[]) => void;
 }
 
 const NAIROBI_CENTER: [number, number] = [-1.2921, 36.8219];
@@ -98,7 +99,7 @@ function RiderMap({ location }: { location?: { lat: number, lng: number } }) {
   );
 }
 
-export default function OrderStatus({ userId }: OrderStatusProps) {
+export default function OrderStatus({ userId, onReorder }: OrderStatusProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -353,6 +354,16 @@ export default function OrderStatus({ userId }: OrderStatusProps) {
                          ))}
                       </div>
                     </div>
+
+                    {isDelivered && (
+                      <button 
+                        onClick={() => onReorder(order.items)}
+                        className="mt-8 w-full py-4 bg-white border-2 border-kfc-red/20 text-kfc-red text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-kfc-red hover:text-white transition-all flex items-center justify-center gap-3 shadow-md group/reorder"
+                      >
+                        <RefreshCcw className="w-4 h-4 group-hover/reorder:rotate-180 transition-transform duration-500" />
+                        Reorder this Selection
+                      </button>
+                    )}
 
                     {!isDelivered && (
                       <div className={`mt-8 p-5 rounded-[24px] ${config.bg} border border-white/20 relative overflow-hidden`}>

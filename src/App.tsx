@@ -188,6 +188,23 @@ export default function App() {
     });
   };
 
+  const handleReorder = (items: CartItem[]) => {
+    setCart(prev => {
+      const newCart = [...prev];
+      items.forEach(item => {
+        const index = newCart.findIndex(i => i.id === item.id);
+        if (index > -1) {
+          newCart[index] = { ...newCart[index], quantity: newCart[index].quantity + item.quantity };
+        } else {
+          newCart.push({ ...item });
+        }
+      });
+      return newCart;
+    });
+    setIsOrdersOpen(false);
+    setIsCartOpen(true);
+  };
+
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -703,7 +720,7 @@ export default function App() {
 
               <div className="flex-1 overflow-y-auto p-8">
                 {user ? (
-                  <OrderStatus userId={user.uid} />
+                  <OrderStatus userId={user.uid} onReorder={handleReorder} />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-center p-10">
                     <LogIn className="w-16 h-16 text-kfc-red/20 mb-6" />
