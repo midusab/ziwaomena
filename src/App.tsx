@@ -5,13 +5,15 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, Plus, Minus, X, Fish, MapPin, Phone, ChefHat, Info, ShieldCheck, Truck, Star, LogIn, LogOut, User, Package, CreditCard, Wallet, ArrowRight, ArrowLeft, CheckCircle2, Search as SearchIcon } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, Fish, MapPin, Phone, ChefHat, Info, ShieldCheck, Truck, Star, LogIn, LogOut, User, Package, CreditCard, Wallet, ArrowRight, ArrowLeft, CheckCircle2, Search as SearchIcon, Leaf } from 'lucide-react';
 import { OMENA_ITEMS, CATEGORIES, VENDORS } from './constants';
 import { CartItem, OmenaCategory, Vendor } from './types';
 import CookingAssistant from './components/CookingAssistant';
 import OrderStatus from './components/OrderStatus';
 import FishermenPage from './components/FishermenPage';
 import ProfileView from './components/ProfileView';
+import WhatsAppButton from './components/WhatsAppButton';
+import { ReviewsSection, FAQSection, InquirySection, ZeroWastePage } from './components/ExperienceSections';
 import { auth, db } from './firebase';
 import axios from 'axios';
 import { 
@@ -62,6 +64,7 @@ export default function App() {
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [showFishermen, setShowFishermen] = useState(false);
+  const [showZeroWaste, setShowZeroWaste] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -346,6 +349,12 @@ export default function App() {
     );
   }
 
+  if (showZeroWaste) {
+    return (
+      <ZeroWastePage onBack={() => setShowZeroWaste(false)} />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-kfc-cream selection:bg-kfc-red/30">
       {/* Navigation */}
@@ -359,6 +368,20 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4">
+             <button 
+                onClick={() => setShowFishermen(true)}
+                className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-kfc-black/40 hover:text-kfc-red transition-colors"
+             >
+                <ChefHat className="w-4 h-4" />
+                Champions
+             </button>
+             <button 
+                onClick={() => setShowZeroWaste(true)}
+                className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-kfc-black/40 hover:text-kfc-red transition-colors"
+             >
+                <Leaf className="w-4 h-4" />
+                Zero Waste
+             </button>
             {isAuthLoading ? (
               <div className="w-8 h-8 rounded-full bg-kfc-red/20 animate-pulse" />
             ) : user ? (
@@ -383,6 +406,14 @@ export default function App() {
                     </div>
                   </button>
                 </div>
+                
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 hover:bg-kfc-red/10 rounded-full transition-colors group relative"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-6 h-6 text-kfc-red group-hover:scale-110 transition-transform" />
+                </button>
               </>
             ) : (
               <button 
@@ -483,8 +514,8 @@ export default function App() {
           >
             <div className="aspect-square relative overflow-hidden rounded-[48px] glass-card p-4 skew-y-1 rotate-1 group">
                <img 
-                src="https://images.pexels.com/photos/30057247/pexels-photo-30057247.jpeg" 
-                alt="Fishing Omena" 
+                src="https://picsum.photos/seed/lake-victoria-dish/800/800" 
+                alt="Delicious Omena" 
                 className="w-full h-full object-cover rounded-[36px] transition-transform duration-700 group-hover:scale-110"
                 referrerPolicy="no-referrer"
                />
@@ -718,19 +749,6 @@ export default function App() {
             </AnimatePresence>
           </div>
         </div>
-      </section>
-
-      {/* Cooking Assistant Section */}
-      <section className="py-32 px-6 max-w-7xl mx-auto">
-         <div className="text-center mb-16">
-            <h3 className="text-5xl font-display text-kfc-black mb-4">Lakeside Conversations</h3>
-            <p className="text-kfc-black/60 font-light max-w-xl mx-auto">
-              Meet our AI Lake Chef. Ask about specialized techniques, sustainable cleaning, or creative plating.
-            </p>
-         </div>
-         <div className="glass-card p-2 rounded-[48px]">
-            <CookingAssistant />
-         </div>
       </section>
 
       {/* Order Status Drawer */}
@@ -1154,6 +1172,11 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Experience Sections */}
+      <ReviewsSection />
+      <FAQSection />
+      <InquirySection />
+
       {/* Footer */}
       <footer className="bg-kfc-black py-20 px-6 text-kfc-white relative overflow-hidden">
         <div className="absolute inset-0 stripes-red opacity-5" />
@@ -1183,7 +1206,17 @@ export default function App() {
                   Our Fishermen
                 </button>
               </li>
-              <li><a href="#" className="hover:text-kfc-red transition-colors">Zero-Waste Plastic</a></li>
+              <li>
+                <button 
+                  onClick={() => {
+                    setShowZeroWaste(true);
+                    window.scrollTo(0, 0);
+                  }} 
+                  className="hover:text-kfc-red transition-colors text-left"
+                >
+                  Zero-Waste Plastic
+                </button>
+              </li>
               <li><a href="#" className="hover:text-kfc-red transition-colors">Sourcing Map</a></li>
             </ul>
           </div>
@@ -1247,6 +1280,10 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Floating Elements */}
+      <CookingAssistant />
+      <WhatsAppButton />
     </div>
   );
 }
