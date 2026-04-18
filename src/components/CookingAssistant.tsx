@@ -4,7 +4,13 @@ import Markdown from 'react-markdown';
 import { ChefHat, Sparkles, Loader2, Send, X, MessageSquare, Fish } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error('Missing VITE_GEMINI_API_KEY in your environment variables.');
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 export default function CookingAssistant() {
   const [isOpen, setIsOpen] = useState(false);
